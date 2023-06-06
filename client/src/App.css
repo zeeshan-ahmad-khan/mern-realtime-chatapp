@@ -1,0 +1,11 @@
+.body {
+  display: flex;
+}
+
+.body section:nth-child(1) {
+  flex: 1;
+}
+
+.body section:nth-child(2) {
+  flex: 3;
+}
