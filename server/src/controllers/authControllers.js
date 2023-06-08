@@ -5,7 +5,8 @@ const Auth = require('../models/authModel');
 
 const registerUser = asyncHandler(async (req, res) => {
     const { firstname, lastname, username, email, password } = req.body;
-    const found = await Auth.findOne({ $or: [{ email }, { username }] })
+    const found = await Auth.findOne({ $or: [{ email }, { username }] });
+
     if (found && found.length !== 0) {
         throw new Error("User already exists !");
     }
@@ -17,7 +18,7 @@ const registerUser = asyncHandler(async (req, res) => {
         throw new Error("Something went wrong ! Please try again !")
     }
 
-    res.status(200).json({ message: "User register successfully !" });
+    res.status(200).json({ message: "User register successfully !", success: true });
 });
 
 const loginUser = asyncHandler(async (req, res) => {
@@ -40,6 +41,7 @@ const loginUser = asyncHandler(async (req, res) => {
         username: user.username,
         email: user.email,
         token,
+        success: true
     })
 });
 
@@ -58,6 +60,7 @@ const getAllUsers = asyncHandler(async (req, res) => {
     res.status(200).json({
         count: users.length,
         users: userData,
+        success: true
     })
 });
 
