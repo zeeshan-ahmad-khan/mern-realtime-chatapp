@@ -9,7 +9,22 @@ const { createServer } = require('http')
 const { Server } = require('socket.io');
 
 const httpServer = createServer(app);
-const io = new Server(httpServer);
+const io = new Server(httpServer, {
+    cors: {
+        origin: "*",
+        methods: ["GET", "POST", "PATCH", "PUT", "DELETE"]
+    }
+});
+
+io.on("connection", (socket) => {
+    console.log("A User Connected");
+    socket.on("sent", (msg) => {
+        io.emit("sentAgain", msg);
+    })
+    socket.on('disconnect', () => {
+        console.log('user disconnected');
+    });
+})
 // routes
 const authRouter = require('./src/routes/authRoutes');
 const chatRouter = require('./src/routes/chatRoutes');
