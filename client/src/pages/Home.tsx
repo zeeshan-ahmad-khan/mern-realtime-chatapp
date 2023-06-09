@@ -7,6 +7,7 @@ export default function Home() {
     useEffect(() => {
         navigate("/login");
     }, [])
+
     return (
         <div>Home</div>
     )

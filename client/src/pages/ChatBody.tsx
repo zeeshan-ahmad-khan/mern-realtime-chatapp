@@ -4,7 +4,8 @@ import { RootState } from '../redux/store';
 import { Outlet, useNavigate, useParams } from 'react-router-dom';
 import { setChatData } from '../redux/slices/chatSlice';
 import { removeCurrentUser } from '../redux/slices/authSlice';
-
+import { Avatar, Box, Center, Container, HStack, Heading, Stack, Text } from '@chakra-ui/react';
+import ChatHeader from '../components/ChatHeader';
 
 export default function ChatBody() {
     const navigate = useNavigate();
@@ -42,7 +43,6 @@ export default function ChatBody() {
         })
             .then((e) => e.json())
             .then((e) => {
-                // console.log(e);
                 dispatch(setChatData({
                     chatId: e.chatData._id,
                     receiver: user
@@ -60,24 +60,33 @@ export default function ChatBody() {
     }, [])
 
     return (
-        <>
-            <button onClick={() => {
-                sessionStorage.removeItem("persist:root");
-                dispatch(removeCurrentUser());
-                navigate("/login");
-            }}>Sign Out</button>
-            <main className='body'>
-                <section>
-                    <h1>{authData.username}</h1>
-                    {users?.map((user) => {
-                        const { _id, username } = user;
-                        return <p key={_id} onClick={() => {
-                            getChatDetails(_id, user)
-                        }}>{username}</p>
-                    })}
-                </section>
-                <Outlet />
-            </main>
-        </>
+        <Box>
+            <ChatHeader />
+            <HStack align="flex-start" justify="space-between">
+                <Box flex={1}>
+                    <Stack>
+                        <Stack py="3" backgroundColor="#A7ECEE">
+                            <Center>Hello, {authData.username}</Center>
+                            <Center fontSize="xs">Click on the usename to start the chat!</Center>
+                        </Stack>
+                        <Stack height="md" overflowY="scroll">
+                            {users?.map((user) => {
+                                const { _id, username } = user;
+                                return <HStack cursor="pointer" key={_id} my="1" px="3">
+                                    <Avatar name={username} size="sm" />
+                                    <Text onClick={() => {
+                                        getChatDetails(_id, user)
+                                    }}>{username}</Text>
+
+                                </HStack>
+                            })}
+                        </Stack>
+                    </Stack>
+                </Box>
+                <Box flex={3}>
+                    <Outlet />
+                </Box>
+            </HStack>
+        </Box >
     )
 }
