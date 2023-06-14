@@ -1,11 +1,13 @@
-import { useEffect, useState } from 'react'
+import { createContext, useEffect, useRef, useState } from 'react'
 import { useDispatch, useSelector } from 'react-redux';
 import { RootState } from '../redux/store';
 import { Outlet, useNavigate, useParams } from 'react-router-dom';
 import { setChatData } from '../redux/slices/chatSlice';
-import { removeCurrentUser } from '../redux/slices/authSlice';
-import { Avatar, Box, Center, Container, HStack, Heading, Stack, Text } from '@chakra-ui/react';
+import { Avatar, AvatarBadge, Box, Center, HStack, Stack, Text } from '@chakra-ui/react';
 import ChatHeader from '../components/ChatHeader';
+import { io } from 'socket.io-client';
+
+export const OutletContext = createContext({ current: {} } as any);
 
 export default function ChatBody() {
     const navigate = useNavigate();
@@ -14,7 +16,9 @@ export default function ChatBody() {
     const { uid } = useParams();
     const token = sessionStorage.getItem("token")
     const [users, setUsers] = useState([]);
-
+    const socket = useRef<any>(null);
+    const [onlineUsers, setOnlineUsers] = useState<{ userId: string, socketId: string }[]>([])
+    socket.current = io("http://localhost:8080");
     function getAllUsers() {
         fetch("http://localhost:5000/chatbook/auth/getAllUsers", {
             headers: {
@@ -59,6 +63,13 @@ export default function ChatBody() {
         getAllUsers();
     }, [])
 
+    useEffect(() => {
+        socket.current.emit("new-user-added", authData.user_id)
+        socket.current.on("get-online-users", (onlineUsers: { userId: string, socketId: string }[]) => {
+            setOnlineUsers(onlineUsers)
+        })
+    }, [authData.user_id])
+
     return (
         <Box>
             <ChatHeader />
@@ -67,13 +78,15 @@ export default function ChatBody() {
                     <Stack>
                         <Stack py="3" backgroundColor="#A7ECEE">
                             <Center>Hello, {authData.username}</Center>
-                            <Center fontSize="xs">Click on the usename to start the chat!</Center>
+                            <Center fontSize="xs">Click on the username to start the chat!</Center>
                         </Stack>
                         <Stack height="md" overflowY="scroll">
                             {users?.map((user) => {
                                 const { _id, username } = user;
                                 return <HStack cursor="pointer" key={_id} my="1" px="3">
-                                    <Avatar name={username} size="sm" />
+                                    <Avatar name={username} size="sm">
+                                        <AvatarBadge boxSize='1.25em' bg={onlineUsers.find(user => user.userId === _id) ? "green.300" : "orange.300"} />
+                                    </Avatar>
                                     <Text onClick={() => {
                                         getChatDetails(_id, user)
                                     }}>{username}</Text>
@@ -84,7 +97,9 @@ export default function ChatBody() {
                     </Stack>
                 </Box>
                 <Box flex={3}>
-                    <Outlet />
+                    <OutletContext.Provider value={socket}>
+                        <Outlet />
+                    </OutletContext.Provider>
                 </Box>
             </HStack>
         </Box >
