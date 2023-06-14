@@ -5,26 +5,7 @@ const env = require('dotenv').config();
 const bodyParser = require('body-parser')
 const connect = require('./src/db/connection');
 const PORT = process.env.PORT || 5000;
-const { createServer } = require('http')
-const { Server } = require('socket.io');
 
-const httpServer = createServer(app);
-const io = new Server(httpServer, {
-    cors: {
-        origin: "*",
-        methods: ["GET", "POST", "PATCH", "PUT", "DELETE"]
-    }
-});
-
-io.on("connection", (socket) => {
-    console.log("A User Connected");
-    socket.on("sent", (msg) => {
-        io.emit("sentAgain", msg);
-    })
-    socket.on('disconnect', () => {
-        console.log('user disconnected');
-    });
-})
 // routes
 const authRouter = require('./src/routes/authRoutes');
 const chatRouter = require('./src/routes/chatRoutes');
@@ -43,7 +24,7 @@ app.use('/chatbook/chat', chatRouter);
 
 app.use(errorMiddleware);
 
-httpServer.listen(PORT, () => {
+app.listen(PORT, () => {
     console.log(`Listening at port ${PORT}`);
     connect();
 })
