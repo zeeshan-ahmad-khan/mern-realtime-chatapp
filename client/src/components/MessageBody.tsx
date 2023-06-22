@@ -1,7 +1,6 @@
 import React, { useContext, useEffect, useRef, useState } from 'react'
 import { useSelector } from 'react-redux'
 import { RootState } from '../redux/store';
-import { io } from 'socket.io-client';
 import { Avatar, Box, Button, Center, Divider, Flex, FormControl, HStack, Input, Spinner, Stack, Text } from '@chakra-ui/react';
 import { OutletContext } from '../pages/ChatBody';
 
@@ -12,10 +11,10 @@ export default function MessageBody() {
     const [messages, setMessages] = useState<any>([]);
     const [inputMessage, setInputMessage] = useState("");
     const [isLoading, setIsLoading] = useState(false);
+    const [typingUser, setTypingUser] = useState("");
     const viewRef = useRef<any>(null);
+    const timerRef = useRef<any>(null);
     const socket = useContext(OutletContext);
-
-    console.log(messages, "ddd");
 
     const sendMessage = () => {
         fetch("http://localhost:5000/chatbook/chat/sendMessage", {
@@ -31,9 +30,21 @@ export default function MessageBody() {
             })
         })
             .then((e) => e.json())
-            .then((e) => {
+            .then((_) => {
+                setMessages((prev: any) => {
+                    return [...prev, {
+                        chatId: chatData.chatId,
+                        senderId: authData.user_id,
+                        message: inputMessage
+                    }]
+                })
+                socket.current.emit("sendMessage", {
+                    chatId: chatData.chatId,
+                    senderId: authData.user_id,
+                    message: inputMessage
+                })
                 setInputMessage("");
-                socket?.current.emit("send-message", chatData.chatId)
+                viewRef.current?.scrollIntoView({ behavior: "smooth" })
             })
             .catch((err) => console.log(err))
     }
@@ -68,18 +79,19 @@ export default function MessageBody() {
     }, [chatData.receiver.username])
 
     useEffect(() => {
-        if (!isLoading) {
-            viewRef.current?.scrollIntoView({ behavior: "smooth" })
-        }
-    }, [chatData.chatId])
-
-    useEffect(() => {
-        socket.current.on("get-messages", (data: any) => {
-            if (data.chatId === chatData.chatId) {
-                getAllChatMessage()
-            }
+        socket.current.on("typing", (data: any) => {
+            setTypingUser(data.username)
+            clearTimeout(timerRef.current);
+            timerRef.current = setTimeout(() => {
+                setTypingUser("")
+            }, 1500)
         })
-    }, [socket])
+        socket.current.on("receiveMessage", (data: any) => {
+            console.log(data, authData.username);
+        })
+    }, [])
+
+    // console.log(messages, "fff");
 
     return (
         <Box ml="-2">
@@ -88,34 +100,41 @@ export default function MessageBody() {
                     <Avatar size={"sm"} name={chatData.receiver.username} />
                     <Text>{chatData.receiver.username}</Text>
                 </HStack>
-                {isLoading ?
-                    <Flex align="center" justify="center">
-                        <Spinner
-                            thickness='4px'
-                            speed='0.65s'
-                            emptyColor='gray.200'
-                            color='blue.500'
-                            size='xl'
-                        />
-                    </Flex>
-                    : <Stack height="sm" overflowY="scroll" px="2">
-                        {messages.map((msg: any) => {
-                            return <React.Fragment key={msg._id}>
-                                {authData.user_id === msg.senderId ?
-                                    <Flex justify="flex-end">
-                                        <Text wordBreak="break-word" backgroundColor="orange.300" p={"1.5"} borderRadius={10}>{msg.message}</Text>
-                                    </Flex> :
-                                    <Flex>
-                                        <Text backgroundColor="green.300" p={"1.5"} borderRadius={10}>{msg.message}</Text>
-                                    </Flex>
-                                }
-                            </React.Fragment>
-                        })}
-                        <Box className='empty-div' ref={viewRef}></Box>
-                    </Stack>}
+                <Box height="sm">
+                    {isLoading ?
+                        <Flex align="center" justify="center">
+                            <Spinner
+                                thickness='4px'
+                                speed='0.65s'
+                                emptyColor='gray.200'
+                                color='blue.500'
+                                size='xl'
+                            />
+                        </Flex>
+                        : <Stack maxHeight="100%" overflowY="scroll" px="2">
+                            {messages.map((msg: any) => {
+                                return <React.Fragment key={msg._id}>
+                                    {authData.user_id === msg.senderId ?
+                                        <Flex justify="flex-end">
+                                            <Text wordBreak="break-word" backgroundColor="orange.300" p={"1.5"} borderRadius={10}>{msg.message}</Text>
+                                        </Flex> :
+                                        <Flex>
+                                            <Text backgroundColor="green.300" p={"1.5"} borderRadius={10}>{msg.message}</Text>
+                                        </Flex>
+                                    }
+                                </React.Fragment>
+                            })}
+                            <div className='empty-div' ref={viewRef}></div>
+                        </Stack>}
+                </Box>
                 <FormControl position="fixed" bottom={0} mb="3">
                     <HStack width={"73%"}>
-                        <Input value={inputMessage} placeholder='Type message here...' type="text" onChange={(e) => setInputMessage(e.target.value)} backgroundColor="#f8f6f4" />
+                        <Input value={inputMessage} placeholder={typingUser !== "" ? `${typingUser} is typing...` : 'Type message here...'} type="text" onChange={(e) => {
+                            setInputMessage(e.target.value)
+                            socket.current.emit("user-typing", {
+                                username: authData.username
+                            })
+                        }} backgroundColor="#f8f6f4" />
                         <Button onClick={handleSendMessage}>Send</Button>
                     </HStack>
                 </FormControl>

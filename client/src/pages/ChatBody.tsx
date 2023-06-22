@@ -18,7 +18,9 @@ export default function ChatBody() {
     const [users, setUsers] = useState([]);
     const socket = useRef<any>(null);
     const [onlineUsers, setOnlineUsers] = useState<{ userId: string, socketId: string }[]>([])
+
     socket.current = io("http://localhost:8080");
+
     function getAllUsers() {
         fetch("http://localhost:5000/chatbook/auth/getAllUsers", {
             headers: {
@@ -69,6 +71,9 @@ export default function ChatBody() {
             setOnlineUsers(onlineUsers)
         })
     }, [authData.user_id])
+
+    console.log(onlineUsers, "ooo");
+
 
     return (
         <Box>

@@ -1,4 +1,4 @@
-import { configureStore } from "@reduxjs/toolkit";
+import { combineReducers, configureStore } from "@reduxjs/toolkit";
 import authReducer from "./slices/authSlice";
 import chatReducer from "./slices/chatSlice"
 import {
@@ -16,14 +16,16 @@ const persistConfig = {
     storage: sessionStorage,
 }
 
-const persistedAuthReducer = persistReducer(persistConfig, authReducer)
-const persistedChatReducer = persistReducer(persistConfig, chatReducer)
+
+const combinedReducers = combineReducers({
+    auth: authReducer,
+    chat: chatReducer
+})
+
+const persistedReducer = persistReducer(persistConfig, combinedReducers)
 
 const store = configureStore({
-    reducer: {
-        auth: persistedAuthReducer,
-        chat: persistedChatReducer
-    },
+    reducer: persistedReducer,
     middleware: (getDefaultMiddleware) =>
         getDefaultMiddleware({
             serializableCheck: {
