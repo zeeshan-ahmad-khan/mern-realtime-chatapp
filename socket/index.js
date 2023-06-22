@@ -18,8 +18,12 @@ io.on("connection", (socket) => {
         io.emit("get-online-users", activeUsers)
     })
 
-    socket.on("send-message", (chatId) => {
-        io.emit("get-messages", chatId)
+    socket.on("sendMessage", (data) => {
+        socket.broadcast.emit("receiveMessage", data);
+    })
+
+    socket.on("user-typing", (data) => {
+        io.emit("typing", { username: data.username })
     })
 
     socket.on("disconnect", () => {
